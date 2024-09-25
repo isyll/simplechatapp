@@ -1,37 +1,24 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
+	"websocket-chat/initializers"
 	"websocket-chat/models"
 )
 
 func RegisterUser(user models.User) error {
-    _, err := DB.Exec(`
-        INSERT INTO users (username, email, name, password) 
-        VALUES (?, ?, ?, ?)`, user.Username, user.Email, user.Name, user.Password)
-
-    if err != nil {
-        log.Printf("error when saving user: %v", err)
-        return err
-    }
-
-    log.Println("user registered successfully")
-    return nil
+    result := initializers.DB.Create(&user)
+    return result.Error
 }
 
 func FindUserBy(fieldName string, searchValue string) (models.User, error) {
 	var user models.User
-	query := fmt.Sprintf("SELECT name, username, email FROM users WHERE %v = ?", fieldName)
+	query := fmt.Sprintf("%v = ?", fieldName)
 
-    err := DB.QueryRow(query, searchValue).Scan(&user.Name, &user.Username, &user.Email)
-	if err != nil {
-        if err == sql.ErrNoRows {
-            return user, err
-        }
-        log.Printf("error when searching user by %v: %v", fieldName, err)
-        return user, err
+    result := initializers.DB.Where(query, searchValue).First(&user)
+
+    if result.Error != nil {
+        return user, result.Error
     }
 
     return user, nil
