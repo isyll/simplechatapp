@@ -43,9 +43,9 @@ func Login(c *gin.Context) {
 		"sub": user.ID,
 		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
 		"typ": "JWT",
-		"username": user.Username,
+		"usr": user.Username,
 		"email": user.Email,
-		"name": user.Email,
+		"name": user.Name,
 	})
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))

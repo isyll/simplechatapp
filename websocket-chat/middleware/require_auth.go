@@ -13,32 +13,39 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const AUTH_PREFIX string = "Bearer "
+
+func errMsg(msg string) gin.H {
+	return gin.H{"error": msg}
+}
+
 func RequireAuth(c *gin.Context) {
+	defaultErrMsg := errMsg("Unauthorized")
 	authHeader := c.GetHeader("Authorization")
 
-    if ! strings.HasPrefix(authHeader, "Bearer ") {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+    if ! strings.HasPrefix(authHeader, AUTH_PREFIX) {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, defaultErrMsg)
 		return
     }
 
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	tokenString := strings.TrimPrefix(authHeader, AUTH_PREFIX)
 	token, err := jwt.Parse(tokenString, keyFunc)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, errMsg(err.Error()))
 		return
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, defaultErrMsg)
 			return
 		}
 		var user models.User
 		initializers.DB.First(&user,claims["sub"])
 
 		if user.ID == 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, defaultErrMsg)
 			return
 		}
 
@@ -46,7 +53,7 @@ func RequireAuth(c *gin.Context) {
 
 		c.Next()
 	} else {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, defaultErrMsg)
 	}
 }
 
